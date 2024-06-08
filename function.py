@@ -181,6 +181,7 @@ def generate_concrete_rule(mcsk_input: str) -> ConcreteRule:
     mcsk = MCSK(mcsk_input)
     rt = determine_rule_template(mcsk)
     return SpecializeRule(rt, mcsk)
+
 def generate_sparql_query(concrete_rule: ConcreteRule) -> str:
     expression = concrete_rule.expression
     id = concrete_rule.id
@@ -390,3 +391,44 @@ def generate_sparql_query(concrete_rule: ConcreteRule) -> str:
         raise ValueError("Unknown Rule Type in Concrete Rule!")
 
     return sparql_query
+
+def generate_datalog_rule(concrete_rule: ConcreteRule) -> str:
+    expression = concrete_rule.expression
+    datalog_rule = ""
+
+    # Check for isOutputOf relationship, adapting example to a typical Datalog use case
+    if "isOutputOf" in expression:
+        product_name = expression.split("(")[1].split(")")[0]
+        process_name = expression.split("(")[3].split(")")[0]
+
+        datalog_rule = f"""
+        [?{product_name}, BFO:isOutputOf, ?{process_name}] :-
+            [?{process_name}, a, BFO:Process],
+            [?{product_name}, a, BFO:Product].
+        """
+
+    # Example of translating "precedes" relationship
+    elif "precedes" in expression:
+        preceding_process = expression.split("(")[1].split(")")[0]
+        succeeding_process = expression.split("(")[3].split(")")[0]
+
+        datalog_rule = f"""
+        [?{succeeding_process}, BFO:Precedes, ?{preceding_process}] :-
+            [?{preceding_process}, a, BFO:Process],
+            [?{succeeding_process}, a, BFO:Process].
+        """
+
+    # Example of translating "participatesAtSomeTime" relationship
+    elif "participatesAtSomeTime" in expression:
+        process_name = expression.split("(")[1].split(")")[0]
+        machine_name = expression.split("(")[3].split(")")[0]
+
+        datalog_rule = f"""
+        [?{machine_name}, 'BFO:participatesAtSomeTime', ?{process_name}] :-
+            [?{process_name}, a, BFO:Process],
+            [?{machine_name}, a, BFO:Machine].
+        """
+    else:
+        raise ValueError("Unknown Rule Type in Concrete Rule!")
+
+    return datalog_rule

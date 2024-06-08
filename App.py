@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify
-from function import generate_concrete_rule
-
-from function import generate_sparql_query
 from flask_cors import CORS
+
+from function import generate_concrete_rule
+from function import generate_sparql_query
+from function import generate_datalog_rule
 
 app = Flask(__name__)
 CORS(app)  # This enables CORS for all routes
@@ -37,6 +38,7 @@ def generateCS():
 
     generated_concerete_rule = []
     generated_sparql_query = []
+    generated_datalog_rule = []
 
     for mcsk_input in mcsk_inputs:
         try:
@@ -48,12 +50,18 @@ def generateCS():
             print(f"Generated SPARQL Query for '{mcsk_input}':\n{sparql_query}")
             generated_sparql_query.append(sparql_query)
 
+            datalog_rule = generate_datalog_rule(cr) 
+            print(f"Generated Datalog Rule for '{mcsk_input}':\n{datalog_rule}")
+            generated_datalog_rule.append(datalog_rule)
+
+
         except ValueError as e:
             print(f"Failed to generate rule for '{mcsk_input}': {e}")
     
     return jsonify({
         'generated_concerete_rule': generated_concerete_rule,
-        'generated_sparql_query': generated_sparql_query
+        'generated_sparql_query': generated_sparql_query,
+        'generated_datalog_rule': generated_datalog_rule
     })
 
 
