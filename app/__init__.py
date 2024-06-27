@@ -10,5 +10,8 @@ def create_app():
 
     from app.controllers.rule_controller import rule_bp
     app.register_blueprint(rule_bp, url_prefix='/api')
+    
+    from app.controllers.sparql_controller import sparql_bp
+    app.register_blueprint(sparql_bp, url_prefix='/sparql')
 
     return app

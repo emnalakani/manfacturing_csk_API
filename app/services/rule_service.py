@@ -134,7 +134,7 @@ def SpecializeRule(RT: RuleTemplate, MCSK: MCSK) -> ConcreteRule:
         CR_expression = CR_expression.replace("isOutputOf(x, p2)", "isOutputOf(x, p2)")
 
     else:
-        raise ValueError(f"Unknown MCSK format for statement: {mcsk.statement}")
+        raise ValueError(f"Unknown MCSK format for statement: {MCSK.statement}")
 
     return ConcreteRule(CR_expression, RT.id)
 
