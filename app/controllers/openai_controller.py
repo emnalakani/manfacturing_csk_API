@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
-from app.services.openai_service import ask_openai, load_context
-from app.services.rule_service import MCSK, determine_rule_template, SpecializeRule, generate_sparql_query, generate_datalog_rule
+from ..services.openai_service import ask_openai, load_context
+from ..services.rule_service import MCSK, determine_rule_template, SpecializeRule, generate_sparql_query, generate_datalog_rule
 import re
 
 openai_bp = Blueprint('openai_bp', __name__)
 
-@openai_bp.route('/generate_rule/openAI', methods=['POST'])
+@openai_bp.route('/generate_rule', methods=['POST'])
 def generate_rule():
     data = request.json
     nl_input = data.get('nl_input')
@@ -41,7 +41,16 @@ def generate_rule():
 
 def process_response(response):
     """Cleans the response and splits it into individual statements."""
-    clean_response = response.replace('Process Requirement:', '').replace('Tool Requirement:', '').strip()
-    clean_response = re.sub(r'\d+\.\d+', '', clean_response)  # Remove enumeration like 1.1, 1.2, etc.
+    # Remove specific phrases
+    clean_response = response.replace('Process Requirement:', '').replace('Tool Requirement:', '').replace('Process Precedence', '').strip()
+    
+    # Remove enumeration like 1.1, 1.2, etc.
+    clean_response = re.sub(r'\d+\.\d+', '', clean_response)
+    
+    # Remove all special characters except alphanumeric and spaces
+    clean_response = re.sub(r'[^a-zA-Z0-9\s]', '', clean_response)
+    
+    # Split by lines and strip each line
     statements = [line.strip() for line in clean_response.split('\n') if line.strip()]
+    
     return statements

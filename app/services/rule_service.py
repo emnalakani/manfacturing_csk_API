@@ -33,9 +33,9 @@ RT7 = RuleTemplate("∀x (assembly(x) → ∃y,z (picking(y) ∧ fixing(z) ∧ p
 RT8 = RuleTemplate("∀x,y (component1(x) ∧ component2(y) ∧ process(p1) ∧ isOutputOf(y, p1) ∧ process(p2) ∧ isOutputOf(x, p2))", 8)
 
 def determine_rule_template(mcsk: MCSK) -> RuleTemplate:
-    if "outcome" in mcsk.statement:
+    if "result" in mcsk.statement:
         return RT1
-    elif "After" in mcsk.statement:
+    elif "comes before" in mcsk.statement:
         return RT2
     elif "involves" in mcsk.statement:
         return RT3
@@ -55,21 +55,21 @@ def determine_rule_template(mcsk: MCSK) -> RuleTemplate:
 def SpecializeRule(RT: RuleTemplate, MCSK: MCSK) -> ConcreteRule:
     words = MCSK.statement.split()
 
-    # Handle RT1: "The outcome of X is a Y."
-    if "outcome" in MCSK.statement:
+    # Handle RT1: "The result of X is a Y."
+    if "result" in MCSK.statement:
         process_name = words[3]
         product_name = ' '.join(words[-3:]).replace('a ', '').replace('an ', '').replace('is ', '').rstrip('.')
         CR_expression = RT.expression.replace("product(x)", f"{product_name}(x)")
         CR_expression = CR_expression.replace("process(y)", f"{process_name}(y)")
         CR_expression = CR_expression.replace("isOutputOf(x, y)", "isOutputOf(x, y)")
 
-    # Handle RT2: "X process After Y process."
-    elif "After" in MCSK.statement:
-        preceding_process = words[1]
-        succeeding_process = words[4]
+ # Handle RT2: "X process comes before Y process."
+    elif "comes before" in MCSK.statement:
+        preceding_process = " ".join(words[:words.index("comes")])
+        succeeding_process = " ".join(words[words.index("before") + 1:])
         CR_expression = RT.expression.replace("process(x)", f"{preceding_process}(x)")
         CR_expression = CR_expression.replace("process(y)", f"{succeeding_process}(y)")
-        CR_expression = CR_expression.replace("precedes(y, x)", "precedes(y, x)")
+        CR_expression = CR_expression.replace("precedes(y, x)", "precedes(x, y)")
 
     # Handle RT3: "X process involves Y machine."
     elif "involves" in MCSK.statement:
