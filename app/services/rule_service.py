@@ -33,7 +33,7 @@ RT7 = RuleTemplate("∀x (assembly(x) → ∃y,z (picking(y) ∧ fixing(z) ∧ p
 RT8 = RuleTemplate("∀x,y (component1(x) ∧ component2(y) ∧ process(p1) ∧ isOutputOf(y, p1) ∧ process(p2) ∧ isOutputOf(x, p2))", 8)
 
 def determine_rule_template(mcsk: MCSK) -> RuleTemplate:
-    if "result" in mcsk.statement:
+    if "outcome" in mcsk.statement:
         return RT1
     elif "After" in mcsk.statement:
         return RT2
@@ -55,8 +55,8 @@ def determine_rule_template(mcsk: MCSK) -> RuleTemplate:
 def SpecializeRule(RT: RuleTemplate, MCSK: MCSK) -> ConcreteRule:
     words = MCSK.statement.split()
 
-    # Handle RT1: "The result of X is a Y."
-    if "result" in MCSK.statement:
+    # Handle RT1: "The outcome of X is a Y."
+    if "outcome" in MCSK.statement:
         process_name = words[3]
         product_name = ' '.join(words[-3:]).replace('a ', '').replace('an ', '').replace('is ', '').rstrip('.')
         CR_expression = RT.expression.replace("product(x)", f"{product_name}(x)")
@@ -73,8 +73,9 @@ def SpecializeRule(RT: RuleTemplate, MCSK: MCSK) -> ConcreteRule:
 
     # Handle RT3: "X process involves Y machine."
     elif "involves" in MCSK.statement:
-        process_name = words[2]  # Adjust index to get the correct process name
-        machine_name = ' '.join(words[-2:]).replace('a ', '').replace('an ', '').rstrip('.')
+        involves_index = words.index("involves")
+        process_name = ' '.join(words[:involves_index])  # Get words before "involves"
+        machine_name = ' '.join(words[involves_index + 1:]).replace('a ', '').replace('an ', '').rstrip('.')
         CR_expression = RT.expression.replace("process(x)", f"{process_name}(x)")
         CR_expression = CR_expression.replace("machine(y)", f"{machine_name}(y)")
         CR_expression = CR_expression.replace("participatesAtSomeTime(y, x)", "participatesAtSomeTime(y, x)")
@@ -136,6 +137,7 @@ def SpecializeRule(RT: RuleTemplate, MCSK: MCSK) -> ConcreteRule:
         raise ValueError(f"Unknown MCSK format for statement: {mcsk.statement}")
 
     return ConcreteRule(CR_expression, RT.id)
+
 
 def generate_concrete_rule(mcsk_input: str) -> ConcreteRule:
     mcsk = MCSK(mcsk_input)

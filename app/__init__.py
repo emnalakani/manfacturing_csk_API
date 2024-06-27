@@ -6,6 +6,9 @@ def create_app():
     CORS(app)
 
     from app.controllers.openai_controller import openai_bp
-    app.register_blueprint(openai_bp, url_prefix='')
+    app.register_blueprint(openai_bp, url_prefix='/api/openai')
+
+    from app.controllers.rule_controller import rule_bp
+    app.register_blueprint(rule_bp, url_prefix='/api')
 
     return app
