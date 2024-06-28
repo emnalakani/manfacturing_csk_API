@@ -6,10 +6,10 @@ def create_app():
     CORS(app)
 
     from app.controllers.openai_controller import openai_bp
-    app.register_blueprint(openai_bp, url_prefix='/api/openai')
+    app.register_blueprint(openai_bp, url_prefix='/openai')
 
     from app.controllers.rule_controller import rule_bp
-    app.register_blueprint(rule_bp, url_prefix='/api')
+    app.register_blueprint(rule_bp, url_prefix='/manual')
     
     from app.controllers.sparql_controller import sparql_bp
     app.register_blueprint(sparql_bp, url_prefix='/sparql')
