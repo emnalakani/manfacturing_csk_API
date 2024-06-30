@@ -71,11 +71,10 @@ def SpecializeRule(RT: RuleTemplate, MCSK: MCSK) -> ConcreteRule:
         CR_expression = CR_expression.replace("process(y)", f"{succeeding_process}(y)")
         CR_expression = CR_expression.replace("precedes(y, x)", "precedes(x, y)")
 
-    # Handle RT3: "X process involves Y machine."
+      # Handle RT3: "X process involves Y machine."
     elif "involves" in MCSK.statement:
-        involves_index = words.index("involves")
-        process_name = ' '.join(words[:involves_index])  # Get words before "involves"
-        machine_name = ' '.join(words[involves_index + 1:]).replace('a ', '').replace('an ', '').rstrip('.')
+        process_name = words[2]  # Adjust index to get the correct process name
+        machine_name = ' '.join(words[-2:]).replace('a ', '').replace('an ', '').rstrip('.')
         CR_expression = RT.expression.replace("process(x)", f"{process_name}(x)")
         CR_expression = CR_expression.replace("machine(y)", f"{machine_name}(y)")
         CR_expression = CR_expression.replace("participatesAtSomeTime(y, x)", "participatesAtSomeTime(y, x)")
