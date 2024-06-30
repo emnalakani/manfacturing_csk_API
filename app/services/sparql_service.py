@@ -212,7 +212,7 @@ def add_classes_to_triple_store(expression: str) -> str:
 
         if result:
             process_instance = f"{process_name}_{str(uuid.uuid4())}"
-        machine_instance = f"{machine_name}_{str(uuid.uuid4())}"
+            machine_instance = f"{machine_name}_{str(uuid.uuid4())}"
 
         # Query to insert instances and relationship
         insertInstancesQuery = f"""
