@@ -1,4 +1,8 @@
-import json
+import re
+
+def remove_leading_articles(text):
+    # Use regular expression to remove leading articles
+    return re.sub(r'^(?:the|a|an)\s+', '', text, flags=re.IGNORECASE).strip()
 
 class RuleTemplate:
     def __init__(self, expression: str, id: int = None):
@@ -57,24 +61,24 @@ def SpecializeRule(RT: RuleTemplate, MCSK: MCSK) -> ConcreteRule:
 
     # Handle RT1: "The result of X is a Y."
     if "result" in MCSK.statement:
-        process_name = words[3]
-        product_name = ' '.join(words[-3:]).replace('a ', '').replace('an ', '').replace('is ', '').rstrip('.')
+        process_name = remove_leading_articles(' '.join(words[3:words.index("is")]))
+        product_name = ' '.join(words[words.index("is") + 1:]).replace('a ', '').replace('an ', '').rstrip('.')
         CR_expression = RT.expression.replace("product(x)", f"{product_name}(x)")
         CR_expression = CR_expression.replace("process(y)", f"{process_name}(y)")
         CR_expression = CR_expression.replace("isOutputOf(x, y)", "isOutputOf(x, y)")
 
- # Handle RT2: "X process comes before Y process."
+    # Handle RT2: "X process comes before Y process."
     elif "comes before" in MCSK.statement:
-        preceding_process = " ".join(words[:words.index("comes")])
-        succeeding_process = " ".join(words[words.index("before") + 1:])
+        preceding_process = remove_leading_articles(" ".join(words[:words.index("comes")]))
+        succeeding_process = remove_leading_articles(" ".join(words[words.index("before") + 1:]))
         CR_expression = RT.expression.replace("process(x)", f"{preceding_process}(x)")
         CR_expression = CR_expression.replace("process(y)", f"{succeeding_process}(y)")
         CR_expression = CR_expression.replace("precedes(y, x)", "precedes(x, y)")
 
-      # Handle RT3: "X process involves Y machine."
+    # Handle RT3: "X process involves Y machine."
     elif "involves" in MCSK.statement:
-        process_name = words[2]  # Adjust index to get the correct process name
-        machine_name = ' '.join(words[-2:]).replace('a ', '').replace('an ', '').rstrip('.')
+        process_name = remove_leading_articles(' '.join(words[:words.index("process")]))
+        machine_name = remove_leading_articles(' '.join(words[words.index("involves") + 1:]).replace('a ', '').replace('an ', '').rstrip('.'))
         CR_expression = RT.expression.replace("process(x)", f"{process_name}(x)")
         CR_expression = CR_expression.replace("machine(y)", f"{machine_name}(y)")
         CR_expression = CR_expression.replace("participatesAtSomeTime(y, x)", "participatesAtSomeTime(y, x)")
