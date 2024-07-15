@@ -35,3 +35,27 @@ def add_classes():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@sparql_bp.route('/add_multiple_classes', methods=['POST'])
+def add_multiple_classes():
+    try:
+        data = request.get_json()
+        expressions = data.get('expressions')  # Expecting 'expressions' to be a list
+
+        if not expressions or not isinstance(expressions, list):
+            return jsonify({"error": "A list of expressions not provided"}), 400
+
+        results = []
+        for expression in expressions:
+            if not expression:
+                results.append({"error": "Empty expression provided"})
+                continue
+            try:
+                result_message = add_classes_to_triple_store(expression)
+                results.append({"expression": expression, "message": result_message})
+            except Exception as e:
+                results.append({"expression": expression, "error": str(e)})
+
+        return jsonify({"results": results}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
