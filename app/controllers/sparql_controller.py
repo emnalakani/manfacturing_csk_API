@@ -2,7 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 
-from app.services.sparql_service import add_classes_to_triple_store
+from app.services.sparql_service import add_classes_to_triple_store, getTriplesFromGraph
 
 
 sparql_bp = Blueprint('sparql_bp', __name__)
@@ -57,5 +57,17 @@ def add_multiple_classes():
                 results.append({"expression": expression, "error": str(e)})
 
         return jsonify({"results": results}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@sparql_bp.route('/get_all_graph_triples', methods=['GET'])
+def get_all_graph_triples():
+    try:
+        graph_name = request.args.get('graph_name')
+        if not graph_name:
+            return jsonify({"error": "Graph name not provided"}), 400
+        
+        triples = getTriplesFromGraph(graph_name)
+        return jsonify({"triples": triples}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

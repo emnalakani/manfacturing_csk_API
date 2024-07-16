@@ -289,3 +289,40 @@ def execute_insert_sparql_query(query: str) -> bool:
     else:
         print(f"SPARQL insert query execution failed with code: {response.status_code}: {response.text}")
         return False
+    
+def execute_select_sparql_query(query: str, graph_name: str) -> dict:
+    headers = {
+        "Accept": "application/sparql-results+json",
+    }
+    url = f"{os.getenv('GRAPHDB_URL')}/repositories/{os.getenv('REPOSITORY_ID')}"
+
+    params = {
+        "query": query,
+        "default-graph-uri": graph_name if graph_name else ""
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"SPARQL select query execution failed with code: {response.status_code}: {response.text}")
+        return {"error": f"SPARQL select query execution failed with code: {response.status_code}"}
+        return []
+    
+    
+def getTriplesFromGraph(graph_name: str):
+    """
+    Prepare and execute a SPARQL SELECT query to fetch all triples from the graph.
+    """
+    query = f"""
+    SELECT ?subject ?predicate ?object
+    FROM <{graph_name}>
+    WHERE {{
+        ?subject ?predicate ?object
+    }}
+    """
+
+    results = execute_select_sparql_query(query, graph_name)
+
+    return results.get('results', {}).get('bindings', [])

@@ -1,3 +1,11 @@
 .env
 
 __pycache__/
+
+*.pyc
+
+log/
+
+gunicorn*
+
+chaikmat-env/
