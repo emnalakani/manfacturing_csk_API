@@ -23,9 +23,9 @@ class ConcreteRule:
     def __str__(self):
         return self.expression
 
-RT1 = RuleTemplate("∀x (product(x) → ∃y (process(y) ∧ isOutputOf(x, y)))", 1)
-RT2 = RuleTemplate("∀x (process(x) → ∃y (process(y) ∧ precedes(x, y)))", 2)
-RT3 = RuleTemplate("∀x (process(x) → ∃y (machine(y) ∧ participatesAtSomeTime(y, x)))", 3)
+RT1 = RuleTemplate("∀x (product(x) → ∃y (process(y) ∧ isOutputOf(x, y)))",1)
+RT2 = RuleTemplate("∀x (process(x) → ∃y (machine(y) ∧ participatesAtSomeTime(y, x)))",2)
+RT3 = RuleTemplate("∀x (process(x) → ∃y (process(y) ∧ precedes(x, y)))",3)
 RT4 = RuleTemplate("∀x (product(x) → ∃y (material(y) ∧ partOf(y, x)))", 4)
 RT5 = RuleTemplate("∀x (assembly(x) → ∃y (assemblyProcess(y) ∧ isOutputOf(x, y)))", 5)
 RT6 = RuleTemplate("∀x (assembly(x) → ∃y (component(y) ∧ isInputOf(y, x)))", 6)
@@ -33,11 +33,14 @@ RT7 = RuleTemplate("∀x (assembly(x) → ∃y,z (picking(y) ∧ fixing(z) ∧ p
 RT8 = RuleTemplate("∀x,y (component1(x) ∧ component2(y) ∧ process(p1) ∧ isOutputOf(y, p1) ∧ process(p2) ∧ isOutputOf(x, p2))", 8)
 
 def determine_rule_template(mcsk: MCSK) -> RuleTemplate:
-    if "result" in mcsk.statement:
+    if "needs to be performed for making" in mcsk.statement:
+        print(f"Using RT1 for statement: {mcsk.statement}")
         return RT1
-    elif "comes before" in mcsk.statement:
+    elif "needs to be used in the " in mcsk.statement:
+        print(f"Using RT2 for statement: {mcsk.statement}")
         return RT2
-    elif "involves" in mcsk.statement:
+    elif "needs to be performed before" in mcsk.statement:
+        print(f"Using RT3 for statement: {mcsk.statement}")
         return RT3
     elif "made of" in mcsk.statement:
         return RT4
@@ -55,29 +58,27 @@ def determine_rule_template(mcsk: MCSK) -> RuleTemplate:
 def SpecializeRule(RT: RuleTemplate, MCSK: MCSK) -> ConcreteRule:
     words = MCSK.statement.split()
 
-    # Handle RT1: "The result of X is a Y."
-    if "result" in MCSK.statement:
-        process_name = words[3]
-        product_name = ' '.join(words[-3:]).replace('a ', '').replace('an ', '').replace('is ', '').rstrip('.')
-        CR_expression = RT.expression.replace("product(x)", f"{product_name}(x)")
+    CR_expression = RT.expression
+
+    print(MCSK.statement)
+
+    if "needs to be performed for making" in MCSK.statement:
+        process_name = ' '.join(words[:words.index("needs")])
+        product_name = ' '.join(words[words.index("making") + 2:]).rstrip('.')
         CR_expression = CR_expression.replace("process(y)", f"{process_name}(y)")
-        CR_expression = CR_expression.replace("isOutputOf(x, y)", "isOutputOf(x, y)")
+        CR_expression = CR_expression.replace("product(x)", f"{product_name}(x)")
 
- # Handle RT2: "X process comes before Y process."
-    elif "comes before" in MCSK.statement:
-        preceding_process = " ".join(words[:words.index("comes")])
-        succeeding_process = " ".join(words[words.index("before") + 1:])
-        CR_expression = RT.expression.replace("process(x)", f"{preceding_process}(x)")
+    elif "needs to be used in the " in MCSK.statement:
+        tool_name = ' '.join(words[:words.index("needs")])
+        process_name = ' '.join(words[words.index("the") + 1:]).rstrip('.')
+        CR_expression = CR_expression.replace("machine(y)", f"{tool_name}(y)")
+        CR_expression = CR_expression.replace("process(x)", f"{process_name}(x)")
+
+    elif "needs to be performed before" in MCSK.statement:
+        preceding_process = ' '.join(words[:words.index("needs")])
+        succeeding_process = ' '.join(words[words.index("before") + 1:]).rstrip('.')
+        CR_expression = CR_expression.replace("process(x)", f"{preceding_process}(x)")
         CR_expression = CR_expression.replace("process(y)", f"{succeeding_process}(y)")
-        CR_expression = CR_expression.replace("precedes(y, x)", "precedes(x, y)")
-
-      # Handle RT3: "X process involves Y machine."
-    elif "involves" in MCSK.statement:
-        process_name = words[2]  # Adjust index to get the correct process name
-        machine_name = ' '.join(words[-2:]).replace('a ', '').replace('an ', '').rstrip('.')
-        CR_expression = RT.expression.replace("process(x)", f"{process_name}(x)")
-        CR_expression = CR_expression.replace("machine(y)", f"{machine_name}(y)")
-        CR_expression = CR_expression.replace("participatesAtSomeTime(y, x)", "participatesAtSomeTime(y, x)")
 
     # Handle RT4: "X is made of Y."
     elif "made of" in MCSK.statement:
@@ -149,50 +150,81 @@ def generate_sparql_query(concrete_rule: ConcreteRule) -> str:
     sparql_query = ""
 
     if "isOutputOf" in expression and id == 1:
-        product_name = expression.split("(")[1].split(")")[0]
-        process_name = expression.split("(")[3].split(")")[0]
+        # Extracting product and process names from the expression for RT1
+        product_name, process_name = expression.split("(")[1].split(")")[0], expression.split("(")[3].split(")")[0]
+
         product_name_formatted = product_name.replace(' ', '_')
         process_name_formatted = process_name.replace(' ', '_')
+
         sparql_query = f"""
-        INSERT {{
-          ?y rdf:type <http://www.mcskg.enit.fr/{process_name_formatted}> .
-          ?x <https://spec.industrialontologies.org/ontology/core/Core/isOutputOf> ?y .
-        }}
-        WHERE {{
-          ?x rdf:type <http://www.mcskg.enit.fr/{product_name_formatted}> .
-          BIND(URI(CONCAT("http://www.mcskg.enit.fr/{process_name_formatted}_", STRUUID())) AS ?y)
-        }}
+                IINSERT {{
+            ?{product_name_formatted} rdf:type {process_name_formatted} .
+            <http://www.MCSKG.enit.fr/{product_name_formatted}> <https://spec.industrialontologies.org/ontology/core/Core/isOutputOf> ?{process_name_formatted} .
+            }}
+            WHERE {{
+            ?{product_name_formatted} rdf:type <http://www.MCSKG.enit.fr/{product_name_formatted}> .
+            BIND(URI(CONCAT("http://www.MCSKG.enit.fr/{process_name_formatted}_", STRUUID())) AS ?{process_name_formatted})
+                }}
         """
 
-    elif "precedes" in expression:
-        preceding_process = expression.split("(")[1].split(")")[0]
-        succeeding_process = expression.split("(")[3].split(")")[0]
+        # product_name = expression.split("(")[1].split(")")[0]
+        # process_name = expression.split("(")[3].split(")")[0]
+        # product_name_formatted = product_name.replace(' ', '_')
+        # process_name_formatted = process_name.replace(' ', '_')
+        # sparql_query = f"""
+        # INSERT {{
+        #   ?y rdf:type <http://www.mcskg.enit.fr/{process_name_formatted}> .
+        #   ?x <https://spec.industrialontologies.org/ontology/core/Core/isOutputOf> ?y .
+        # }}
+        # WHERE {{
+        #   ?x rdf:type <http://www.mcskg.enit.fr/{product_name_formatted}> .
+        #   BIND(URI(CONCAT("http://www.mcskg.enit.fr/{process_name_formatted}_", STRUUID())) AS ?y)
+        # }}
+        # """
+
+    elif "precedes" in expression:        
+        preceding_process, succeeding_process = expression.split("(")[1].split(")")[0], expression.split("(")[3].split(")")[0]
+
         preceding_process_formatted = preceding_process.replace(' ', '_')
         succeeding_process_formatted = succeeding_process.replace(' ', '_')
+
         sparql_query = f"""
         INSERT {{
-        ?y rdf:type <http://www.mcskg.enit.fr/{succeeding_process_formatted}> .
-        ?y <http://purl.obolibrary.org/obo/BFO_0000063> ?x .
+            ?{preceding_process_formatted} rdf:type <http://purl.obolibrary.org/obo/BFO_0000015> .
+            <http://www.MCSKG.enit.fr/{preceding_process_formatted}> <http://purl.obolibrary.org/obo/BFO_0000063> ?{succeeding_process_formatted} .
         }}
-         WHERE {{
-        ?x rdf:type <http://www.mcskg.enit.fr/{preceding_process_formatted}>.
-        BIND(URI(CONCAT("http://www.mcskg.enit.fr/{succeeding_process_formatted}_", STRUUID())) AS ?y)
+        WHERE {{
+            ?{preceding_process_formatted} rdf:type <http://purl.obolibrary.org/obo/BFO_0000015> .
+            BIND(URI(CONCAT("http://www.MCSKG.enit.fr/{succeeding_process_formatted}_", STRUUID())) AS ?{succeeding_process_formatted})
         }}
         """
+        # preceding_process = expression.split("(")[1].split(")")[0]
+        # succeeding_process = expression.split("(")[3].split(")")[0]
+        # preceding_process_formatted = preceding_process.replace(' ', '_')
+        # succeeding_process_formatted = succeeding_process.replace(' ', '_')
+        # sparql_query = f"""
+        # INSERT {{
+        # ?y rdf:type <http://www.mcskg.enit.fr/{succeeding_process_formatted}> .
+        # ?y <http://purl.obolibrary.org/obo/BFO_0000063> ?x .
+        # }}
+        #  WHERE {{
+        # ?x rdf:type <http://www.mcskg.enit.fr/{preceding_process_formatted}>.
+        # BIND(URI(CONCAT("http://www.mcskg.enit.fr/{succeeding_process_formatted}_", STRUUID())) AS ?y)
+        # }}
+        # """
 
     elif "participatesAtSomeTime" in expression:
-        process_name = expression.split("(")[1].split(")")[0]
-        machine_name = expression.split("(")[3].split(")")[0]
+        tool_name, process_name = expression.split("(")[3].split(")")[0], expression.split("(")[1].split(")")[0]
+
         process_name_formatted = process_name.replace(' ', '_')
-        machine_name_formatted = machine_name.replace(' ', '_')
+        tool_name_formatted = tool_name.replace(' ', '_')
         sparql_query = f"""
-        INSERT {{
-        ?y rdf:type <http://www.mcskg.enit.fr/{machine_name_formatted}> .
-        ?y <http://purl.obolibrary.org/obo/BFO_0000056> ?x .
+        INSERT DATA {{
+            ?{process_name_formatted} rdf:type <http://purl.obolibrary.org/obo/BFO_0000015> .
+            <http://www.MCSKG.enit.fr/{tool_name_formatted}> <http://purl.obolibrary.org/obo/BFO_0000056> ?{process_name_formatted} .
         }}
-         WHERE {{
-        ?x rdf:type <http://www.mcskg.enit.fr/{process_name_formatted}>.
-        BIND(URI(CONCAT("http://www.mcskg.enit.fr/{machine_name_formatted}_", STRUUID())) AS ?y)
+        WHERE {{
+            BIND(URI(CONCAT("http://www.MCSKG.enit.fr/{tool_name_formatted}_", STRUUID())) AS ?{tool_name_formatted})
         }}
         """
 
@@ -300,9 +332,12 @@ def generate_datalog_rule(concrete_rule: ConcreteRule) -> str:
     expression = concrete_rule.expression
     datalog_rule = ""
 
+    print(expression)
+
     if "isOutputOf" in expression:
         product_name = expression.split("(")[1].split(")")[0]
         process_name = expression.split("(")[3].split(")")[0]
+
         datalog_rule = f"""
         [?{product_name}, BFO:isOutputOf, ?{process_name}] :-
             [?{process_name}, a, BFO:Process],
@@ -312,19 +347,21 @@ def generate_datalog_rule(concrete_rule: ConcreteRule) -> str:
     elif "precedes" in expression:
         preceding_process = expression.split("(")[1].split(")")[0]
         succeeding_process = expression.split("(")[3].split(")")[0]
+
         datalog_rule = f"""
-        [?,{succeeding_process}, BFO:Precedes, ?{preceding_process}] :-
+        [?{preceding_process}, BFO:Precedes, ?{succeeding_process}] :-
             [?{preceding_process}, a, BFO:Process],
             [?{succeeding_process}, a, BFO:Process].
         """
 
     elif "participatesAtSomeTime" in expression:
         process_name = expression.split("(")[1].split(")")[0]
-        machine_name = expression.split("(")[3].split(")")[0]
+        tool_name = expression.split("(")[3].split(")")[0]
+
         datalog_rule = f"""
-        [?{machine_name}, 'BFO:participatesAtSomeTime', ?{process_name}] :-
+        [?{tool_name}, 'BFO:participatesAtSomeTime', ?{process_name}] :-
             [?{process_name}, a, BFO:Process],
-            [?{machine_name}, a, BFO:Machine].
+            [?{tool_name}, a, IOF:Machine].
         """
     else:
         raise ValueError("Unknown Rule Type in Concrete Rule!")
