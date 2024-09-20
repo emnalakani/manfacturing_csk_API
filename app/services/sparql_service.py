@@ -17,7 +17,7 @@ def add_classes_to_triple_store(expression: str) -> str:
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
             PREFIX chaikmat: <http://mcsk.enit.fr/chaikmat#>
-            PREFIX core: <https://spec.industrialontologies.org/ontology/core/>
+            PREFIX core: <https://spec.industrialontologies.org/ontology/core/Core/>
             PREFIX bfo: <http://purl.obolibrary.org/obo/>
 
             # Define classes if they don't already exist
@@ -26,7 +26,7 @@ def add_classes_to_triple_store(expression: str) -> str:
                 chaikmat:{product_name} rdf:type owl:Class .
                 chaikmat:{process_name} rdf:type owl:Class .                
                 chaikmat:{product_name} rdfs:subClassOf core:MaterialProduct .
-                chaikmat:{process_name} rdfs:subClassOf bfo:BFO_0000015 .
+                chaikmat:{process_name} rdfs:subClassOf core:ManufactringProcess .
               }}
             }} WHERE {{
               GRAPH <http://mcsk.enit.fr/chaikmat> {{
@@ -47,7 +47,7 @@ def add_classes_to_triple_store(expression: str) -> str:
                 }}
                 OPTIONAL {{
                   chaikmat:{process_name} rdf:type owl:Class .
-                  FILTER NOT EXISTS {{ chaikmat:{process_name} rdfs:subClassOf bfo:BFO_0000015 }}
+                  FILTER NOT EXISTS {{ chaikmat:{process_name} rdfs:subClassOf core:ManufactringProcess }}
                 }}
               }}
             }}
@@ -64,7 +64,7 @@ def add_classes_to_triple_store(expression: str) -> str:
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     PREFIX owl: <http://www.w3.org/2002/07/owl#>
     PREFIX chaikmat: <http://mcsk.enit.fr/chaikmat#>
-    PREFIX core: <https://spec.industrialontologies.org/ontology/core/>
+    PREFIX core: <https://spec.industrialontologies.org/ontology/core/Core/>
 
     INSERT {{
       GRAPH <http://mcsk.enit.fr/chaikmat> {{
@@ -103,14 +103,15 @@ def add_classes_to_triple_store(expression: str) -> str:
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
             PREFIX chaikmat: <http://mcsk.enit.fr/chaikmat#>
             PREFIX bfo: <http://purl.obolibrary.org/obo/>
+            PREFIX core: <https://spec.industrialontologies.org/ontology/core/Core/>
 
             INSERT {{
               GRAPH <http://mcsk.enit.fr/chaikmat> {{
                 # Define classes
                 chaikmat:{preceding_process} rdf:type owl:Class ;
-                                             rdfs:subClassOf bfo:BFO_0000015 .
+                                             rdfs:subClassOf core:ManufactringProcess .
                 chaikmat:{succeeding_process} rdf:type owl:Class ;
-                                              rdfs:subClassOf bfo:BFO_0000015 .
+                                              rdfs:subClassOf core:ManufactringProcess .
 
               }}
             }} WHERE {{
@@ -118,11 +119,11 @@ def add_classes_to_triple_store(expression: str) -> str:
               GRAPH <http://mcsk.enit.fr/chaikmat> {{
                 OPTIONAL {{
                   chaikmat:{preceding_process} rdf:type owl:Class .
-                  FILTER NOT EXISTS {{ chaikmat:{preceding_process} rdfs:subClassOf bfo:BFO_0000015 }}
+                  FILTER NOT EXISTS {{ chaikmat:{preceding_process} rdfs:subClassOf core:ManufactringProcess }}
                 }}
                 OPTIONAL {{
                   chaikmat:{succeeding_process} rdf:type owl:Class .
-                  FILTER NOT EXISTS {{ chaikmat:{succeeding_process} rdfs:subClassOf bfo:BFO_0000015 }}
+                  FILTER NOT EXISTS {{ chaikmat:{succeeding_process} rdfs:subClassOf core:ManufactringProcess }}
                 }}
               }}
             }}
@@ -190,7 +191,7 @@ def add_classes_to_triple_store(expression: str) -> str:
           GRAPH <http://mcsk.enit.fr/chaikmat> {{
             # Define classes if they don't already exist
             chaikmat:{process_name} rdf:type owl:Class ;
-                                     rdfs:subClassOf bfo:BFO_0000015 .
+                                     rdfs:subClassOf core:ManufactringProcess .
             chaikmat:{machine_name} rdf:type owl:Class ;
                                      rdfs:subClassOf msdl:MSDL_0000030 .
           }}

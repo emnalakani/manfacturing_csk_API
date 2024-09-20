@@ -190,11 +190,11 @@ def generate_sparql_query(concrete_rule: ConcreteRule) -> str:
 
         sparql_query = f"""
         INSERT {{
-            ?{preceding_process_formatted} rdf:type <http://purl.obolibrary.org/obo/BFO_0000015> .
+            ?{preceding_process_formatted} rdf:type <https://spec.industrialontologies.org/ontology/core/Core/ManufacturingProcess> .
             <http://www.MCSKG.enit.fr/{preceding_process_formatted}> <http://purl.obolibrary.org/obo/BFO_0000063> ?{succeeding_process_formatted} .
         }}
         WHERE {{
-            ?{preceding_process_formatted} rdf:type <http://purl.obolibrary.org/obo/BFO_0000015> .
+            ?{preceding_process_formatted} rdf:type <https://spec.industrialontologies.org/ontology/core/Core/ManufacturingProcess> .
             BIND(URI(CONCAT("http://www.MCSKG.enit.fr/{succeeding_process_formatted}_", STRUUID())) AS ?{succeeding_process_formatted})
         }}
         """
@@ -220,7 +220,7 @@ def generate_sparql_query(concrete_rule: ConcreteRule) -> str:
         tool_name_formatted = tool_name.replace(' ', '_')
         sparql_query = f"""
         INSERT DATA {{
-            ?{process_name_formatted} rdf:type <http://purl.obolibrary.org/obo/BFO_0000015> .
+            ?{process_name_formatted} rdf:type <https://spec.industrialontologies.org/ontology/core/Core/ManufacturingProcess> .
             <http://www.MCSKG.enit.fr/{tool_name_formatted}> <http://purl.obolibrary.org/obo/BFO_0000056> ?{process_name_formatted} .
         }}
         WHERE {{
