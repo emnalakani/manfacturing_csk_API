@@ -3,6 +3,7 @@
 import os
 import uuid
 import requests
+import re
 
 
 def add_classes_to_triple_store(expression: str) -> str:
@@ -54,9 +55,13 @@ def add_classes_to_triple_store(expression: str) -> str:
         """
         print("inserting classes")
         result =  execute_insert_sparql_query(insertSparqlQuery)
+
         if result:
-            product_instance = f"{product_name}_{str(uuid.uuid4())}"
-            process_instance = f"{process_name}_{str(uuid.uuid4())}"
+            product_counter = get_latest_instance_counter(product_name)
+            process_counter = get_latest_instance_counter(process_name)
+
+            product_instance = f"{product_name}_{product_counter}"
+            process_instance = f"{process_name}_{process_counter}"
 
             # Insert instances
             insertInstancesQuery = f"""
@@ -297,14 +302,23 @@ def execute_select_sparql_query(query: str, graph_name: str) -> dict:
     }
     url = f"{os.getenv('GRAPHDB_URL')}/repositories/{os.getenv('REPOSITORY_ID')}"
 
-    params = {
-        "query": query,
-        "default-graph-uri": graph_name if graph_name else ""
-    }
+    if graph_name:
+      params = {
+          "query": query,
+          "default-graph-uri": graph_name
+      }
+    else:
+        params = {
+          "query": query
+        }
+
+    print(f"Executing SPARQL query at URL: {url}")
+    print(f"Parameters: {params}")
 
     response = requests.get(url, headers=headers, params=params)
 
     if response.status_code == 200:
+        print(response.json())
         return response.json()
     else:
         print(f"SPARQL select query execution failed with code: {response.status_code}: {response.text}")
@@ -327,3 +341,41 @@ def getTriplesFromGraph(graph_name: str):
     results = execute_select_sparql_query(query, graph_name)
 
     return results.get('results', {}).get('bindings', [])
+
+
+def get_latest_instance_counter(class_name):
+    # Query to get all instances of the class
+    query = f"""
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX chaikmat: <http://mcsk.enit.fr/chaikmat#>
+
+    SELECT ?instance WHERE {{
+      GRAPH <http://mcsk.enit.fr/chaikmat> {{
+        ?instance rdf:type chaikmat:{class_name} .
+      }}
+    }}
+    """
+
+    query = " ".join(query.split())
+    
+    # Execute the query to get all instances
+    print("getting instances count")
+    print(query)
+    result = execute_select_sparql_query(query,  None)
+    print(result)
+
+    # Extract the counters from the instance names
+    counter = 0
+    if result and result['results']['bindings']:
+        for instance in result['results']['bindings']:
+            print("formatting")
+            match = re.search(f"{class_name}_(\\d+)", instance['instance']['value'])
+            print("formatting")
+            if match:
+                current_counter = int(match.group(1))
+                counter = max(counter, current_counter)
+
+    # Return the next available counter
+    print(f"found {counter} instances")
+
+    return counter + 1
