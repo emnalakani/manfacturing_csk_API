@@ -6,7 +6,7 @@ import requests
 import re
 
 
-def add_classes_to_triple_store(expression: str) -> str:
+def add_classes_to_triple_store(expression: str, increment: bool) -> str:
 
     # Check for isOutputOf relationship, adapting example to a typical Datalog use case
     if "isOutputOf" in expression:
@@ -57,8 +57,8 @@ def add_classes_to_triple_store(expression: str) -> str:
         result =  execute_insert_sparql_query(insertSparqlQuery)
 
         if result:
-            product_counter = get_latest_instance_counter(product_name)
-            process_counter = get_latest_instance_counter(process_name)
+            product_counter = get_latest_instance_counter(product_name, increment)
+            process_counter = get_latest_instance_counter(process_name, increment)
 
             product_instance = f"{product_name}_{product_counter}"
             process_instance = f"{process_name}_{process_counter}"
@@ -138,8 +138,13 @@ def add_classes_to_triple_store(expression: str) -> str:
         result = execute_insert_sparql_query(insertSparqlQuery)
 
         if result:
-            preceding_instance = f"{preceding_process}_{str(uuid.uuid4())}"
-            succeeding_instance = f"{succeeding_process}_{str(uuid.uuid4())}"
+
+            preceding_counter = get_latest_instance_counter(preceding_process, increment)
+            succeeding_counter = get_latest_instance_counter(succeeding_process, increment)
+
+            preceding_instance = f"{preceding_process}_{preceding_counter}"
+            succeeding_instance = f"{succeeding_process}_{succeeding_counter}"
+
 
             # Query to insert instances and precedes relationship
             insertInstancesQuery = f"""
@@ -191,6 +196,7 @@ def add_classes_to_triple_store(expression: str) -> str:
         PREFIX chaikmat: <http://mcsk.enit.fr/chaikmat#>
         PREFIX bfo: <http://purl.obolibrary.org/obo/>
         PREFIX msdl: <http://infoneer.txstate.edu/ontology/MSDL_>
+        PREFIX core: <https://spec.industrialontologies.org/ontology/core/Core/>
 
         INSERT {{
           GRAPH <http://mcsk.enit.fr/chaikmat> {{
@@ -217,8 +223,11 @@ def add_classes_to_triple_store(expression: str) -> str:
         result =  execute_insert_sparql_query(insertSparqlQuery)
 
         if result:
-            process_instance = f"{process_name}_{str(uuid.uuid4())}"
-            machine_instance = f"{machine_name}_{str(uuid.uuid4())}"
+            process_counter = get_latest_instance_counter(process_name, increment)
+            machine_counter = get_latest_instance_counter(machine_name, increment)
+
+            process_instance = f"{process_name}_{process_counter}"
+            machine_instance = f"{machine_name}_{machine_counter}"
 
         # Query to insert instances and relationship
         insertInstancesQuery = f"""
@@ -343,7 +352,7 @@ def getTriplesFromGraph(graph_name: str):
     return results.get('results', {}).get('bindings', [])
 
 
-def get_latest_instance_counter(class_name):
+def get_latest_instance_counter(class_name: str, increment: bool):
     # Query to get all instances of the class
     query = f"""
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -378,4 +387,7 @@ def get_latest_instance_counter(class_name):
     # Return the next available counter
     print(f"found {counter} instances")
 
-    return counter + 1
+    if increment:
+      return counter + 1
+    else:
+        return counter

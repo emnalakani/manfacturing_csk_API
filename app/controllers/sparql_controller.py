@@ -20,7 +20,7 @@ def add_classes():
         #if not query:
         #    return jsonify({"error": "Query not provided"}), 400
 
-        result_message = add_classes_to_triple_store(expression)
+        result_message = add_classes_to_triple_store(expression, True)
 
         return jsonify({"message": result_message}), 200
 
@@ -46,13 +46,15 @@ def add_multiple_classes():
             return jsonify({"error": "A list of expressions not provided"}), 400
 
         results = []
+        increment = True
         for expression in expressions:
             if not expression:
                 results.append({"error": "Empty expression provided"})
                 continue
             try:
-                result_message = add_classes_to_triple_store(expression)
+                result_message = add_classes_to_triple_store(expression, increment)
                 results.append({"expression": expression, "message": result_message})
+                increment = False
             except Exception as e:
                 results.append({"expression": expression, "error": str(e)})
 
