@@ -334,16 +334,17 @@ def execute_select_sparql_query(query: str, graph_name: str) -> dict:
         return {"error": f"SPARQL select query execution failed with code: {response.status_code}"}
         return []
     
-    
 def getTriplesFromGraph(graph_name: str):
     """
-    Prepare and execute a SPARQL SELECT query to fetch all triples from the graph.
+    Prepare and execute a SPARQL SELECT query to fetch all triples from the specified graph
+    where the subject or predicate contains the graph_name.
     """
     query = f"""
     SELECT ?subject ?predicate ?object
     FROM <{graph_name}>
     WHERE {{
         ?subject ?predicate ?object
+        FILTER (STRSTARTS(STR(?subject), "{graph_name}") || STRSTARTS(STR(?predicate), "{graph_name}"))
     }}
     """
 
