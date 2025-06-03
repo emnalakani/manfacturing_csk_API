@@ -4,6 +4,7 @@ import os
 import uuid
 import requests
 import re
+from requests.auth import HTTPBasicAuth
 
 
 def add_classes_to_triple_store(expression: str, increment: bool) -> str:
@@ -267,9 +268,6 @@ def add_classes_to_triple_store(expression: str, increment: bool) -> str:
         print("Error inserting classes and subclass relationships for participatesAtSomeTime")
         return False
 
-
-
-
 def execute_ask_sparql_query(query: str) -> bool:
     """
     Execute ask a SPARQL query against GraphDB and return True if successful, False otherwise.
@@ -279,7 +277,10 @@ def execute_ask_sparql_query(query: str) -> bool:
         "Content-Type": "application/sparql-query",
     }
     url = f"{os.getenv('GRAPHDB_URL')}/repositories/{os.getenv('REPOSITORY_ID')}/statements"
-    response = requests.post(url, headers=headers, data=query)
+    username = os.getenv("GRAPHDB_USERNAME")
+    password = os.getenv("GRAPHDB_PASSWORD")
+
+    response = requests.post(url, headers=headers, data=query, auth=HTTPBasicAuth(username, password))
 
     if response.status_code == 200:
         return True
@@ -297,7 +298,10 @@ def execute_insert_sparql_query(query: str) -> bool:
         "Content-Type": "application/sparql-update",
     }
     url = f"{os.getenv('GRAPHDB_URL')}/repositories/{os.getenv('REPOSITORY_ID')}/statements"
-    response = requests.post(url, headers=headers, data=query)
+    username = os.getenv("GRAPHDB_USERNAME")
+    password = os.getenv("GRAPHDB_PASSWORD")
+
+    response = requests.post(url, headers=headers, data=query, auth=HTTPBasicAuth(username, password))
 
     if response.status_code == 204:
         return True
@@ -310,6 +314,9 @@ def execute_select_sparql_query(query: str, graph_name: str) -> dict:
         "Accept": "application/sparql-results+json",
     }
     url = f"{os.getenv('GRAPHDB_URL')}/repositories/{os.getenv('REPOSITORY_ID')}"
+    username = os.getenv("GRAPHDB_USERNAME")
+    password = os.getenv("GRAPHDB_PASSWORD")
+
 
     if graph_name:
       params = {
@@ -324,7 +331,7 @@ def execute_select_sparql_query(query: str, graph_name: str) -> dict:
     print(f"Executing SPARQL query at URL: {url}")
     print(f"Parameters: {params}")
 
-    response = requests.get(url, headers=headers, params=params)
+    response = requests.get(url, headers=headers, params=params, auth=HTTPBasicAuth(username, password))
 
     if response.status_code == 200:
         print(response.json())
@@ -351,7 +358,6 @@ def getTriplesFromGraph(graph_name: str):
     results = execute_select_sparql_query(query, graph_name)
 
     return results.get('results', {}).get('bindings', [])
-
 
 def get_latest_instance_counter(class_name: str, increment: bool):
     # Query to get all instances of the class

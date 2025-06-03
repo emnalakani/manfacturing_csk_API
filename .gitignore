@@ -9,3 +9,5 @@ log/
 gunicorn*
 
 chaikmat-env/
+
+venv/
